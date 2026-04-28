@@ -69,7 +69,6 @@ class HomeScreen extends StatelessWidget {
         }
 
         if (state is SortedByAuthor || state is SortedByTitle) {
-          // Extract books from whichever state it is
           final books = state is SortedByAuthor
               ? (state as SortedByAuthor).books
               : (state as SortedByTitle).books;
@@ -94,8 +93,6 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Sort chips — use state runtimeType to determine selected
-                  // chip, exactly as described in the slide (Option 2)
                   Row(
                     children: [
                       const Text(
@@ -105,7 +102,6 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       _SortChip(
                         label: 'Author',
-                        // Selected when state runtimeType is SortedByAuthor
                         selected: state is SortedByAuthor,
                         onTap: () =>
                             context.read<BookBloc>().add(SortByAuthor()),
@@ -126,7 +122,6 @@ class HomeScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
-                  // Horizontal scrolling book thumbnail list
                   SizedBox(
                     height: 160,
                     child: ListView.separated(

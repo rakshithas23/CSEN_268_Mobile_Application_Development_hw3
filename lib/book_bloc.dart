@@ -94,13 +94,10 @@ class BookBloc extends Bloc<BookEvent, BookState> {
         imageUrl: 'https://covers.openlibrary.org/b/id/9264645-L.jpg',
       ),
     ];
-
-    // Default: sort by author on load
     add(SortByAuthor());
   }
 
   void _sortByAuthor(SortByAuthor event, Emitter<BookState> emit) {
-    // Emit BookLoading first (shimmer trick) then SortedByAuthor
     emit(BookLoading());
     final sorted = List<Book>.from(allBooks)
       ..sort((a, b) => a.author.compareTo(b.author));
@@ -108,7 +105,6 @@ class BookBloc extends Bloc<BookEvent, BookState> {
   }
 
   void _sortByTitle(SortByTitle event, Emitter<BookState> emit) {
-    // Emit BookLoading first (shimmer trick) then SortedByTitle
     emit(BookLoading());
     final sorted = List<Book>.from(allBooks)
       ..sort((a, b) => a.title.compareTo(b.title));
@@ -117,7 +113,6 @@ class BookBloc extends Bloc<BookEvent, BookState> {
 
   void _selectBook(SelectBook event, Emitter<BookState> emit) {
     final current = state;
-    // Preserve books list and current sort type for when user navigates back
     if (current is SortedByAuthor) {
       emit(BookDetailView(
         book: event.book,
@@ -136,7 +131,6 @@ class BookBloc extends Bloc<BookEvent, BookState> {
   void _backToList(BackToList event, Emitter<BookState> emit) {
     final current = state;
     if (current is BookDetailView) {
-      // Re-emit the correct sorted state based on what was active before
       if (current.sortType == SortType.author) {
         emit(SortedByAuthor(books: current.books));
       } else {
