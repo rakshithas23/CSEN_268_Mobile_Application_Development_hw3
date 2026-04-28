@@ -43,14 +43,11 @@ class HomeScreen extends StatelessWidget {
     return BlocBuilder<BookBloc, BookState>(
       builder: (context, state) {
 
-        // ── Loading (shimmer between sorts) ──────────────────────────────
         if (state is BookLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
-
-        // ── Detail page ──────────────────────────────────────────────────
         if (state is BookDetailView) {
           return Scaffold(
             appBar: AppBar(
@@ -71,9 +68,6 @@ class HomeScreen extends StatelessWidget {
           );
         }
 
-        // ── List page: handles both SortedByAuthor and SortedByTitle ─────
-        // Per the slide: if (state is SortedByTitle or state is SortedByAuthor)
-        //                → show the BookList view
         if (state is SortedByAuthor || state is SortedByTitle) {
           // Extract books from whichever state it is
           final books = state is SortedByAuthor
@@ -161,8 +155,6 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// ── Sort chip widget ─────────────────────────────────────────────────────────
-
 class _SortChip extends StatelessWidget {
   final String label;
   final bool selected;
@@ -200,8 +192,6 @@ class _SortChip extends StatelessWidget {
   }
 }
 
-// ── Widget 1: Book thumbnail (image only) ────────────────────────────────────
-
 class BookThumbnailWidget extends StatelessWidget {
   final Book book;
 
@@ -237,8 +227,6 @@ class BookThumbnailWidget extends StatelessWidget {
     );
   }
 }
-
-// ── Widget 2: Book detail (image + title + author + description) ─────────────
 
 class BookDetailWidget extends StatelessWidget {
   final Book book;
