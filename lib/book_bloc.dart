@@ -50,17 +50,6 @@ class BookBloc extends Bloc<BookEvent, BookState> {
         imageUrl: 'https://covers.openlibrary.org/b/id/8739161-L.jpg',
       ),
       const Book(
-        id: '4',
-        title: 'Little Gods',
-        author: 'Meng Jin',
-        description:
-            'On the night of June 4th, 1989 — as the Tiananmen Square massacre unfolds across the city — a woman gives birth alone in a Beijing hospital. The father is nowhere to be found.\n\n'
-            'Su Lan is a brilliant physicist who has always rejected the idea of home, convinced that a woman of science must remain untethered from sentiment. But her obsessive pursuit of a theory of time hides a past she has refused to confront: a village left behind, a love destroyed, and a child she barely knows.\n\n'
-            'When Su Lan dies suddenly in Shanghai, her teenage daughter Liya travels from the United States to China to collect her mother\'s ashes. Piecing together accounts from those who knew her — a landlady, a classmate, an old flame — Liya slowly reconstructs the story of a woman she never really knew.\n\n'
-            'Meng Jin\'s debut novel is a profound meditation on memory, history, identity, and the invisible forces that shape a life. Luminous and intellectually fearless, Little Gods announces the arrival of a remarkable new literary voice.',
-        imageUrl: 'https://covers.openlibrary.org/b/id/10278009-L.jpg',
-      ),
-      const Book(
         id: '5',
         title: "Don't Look Back",
         author: 'Isaac Nelson',
@@ -106,30 +95,40 @@ class BookBloc extends Bloc<BookEvent, BookState> {
       ),
     ];
 
+    // Default: sort by author on load
     add(SortByAuthor());
   }
 
   void _sortByAuthor(SortByAuthor event, Emitter<BookState> emit) {
+    // Emit BookLoading first (shimmer trick) then SortedByAuthor
     emit(BookLoading());
     final sorted = List<Book>.from(allBooks)
       ..sort((a, b) => a.author.compareTo(b.author));
-    emit(BookListView(books: sorted, sortType: SortType.author));
+    emit(SortedByAuthor(books: sorted));
   }
 
   void _sortByTitle(SortByTitle event, Emitter<BookState> emit) {
+    // Emit BookLoading first (shimmer trick) then SortedByTitle
     emit(BookLoading());
     final sorted = List<Book>.from(allBooks)
       ..sort((a, b) => a.title.compareTo(b.title));
-    emit(BookListView(books: sorted, sortType: SortType.title));
+    emit(SortedByTitle(books: sorted));
   }
 
   void _selectBook(SelectBook event, Emitter<BookState> emit) {
     final current = state;
-    if (current is BookListView) {
+    // Preserve books list and current sort type for when user navigates back
+    if (current is SortedByAuthor) {
       emit(BookDetailView(
         book: event.book,
         books: current.books,
-        sortType: current.sortType,
+        sortType: SortType.author,
+      ));
+    } else if (current is SortedByTitle) {
+      emit(BookDetailView(
+        book: event.book,
+        books: current.books,
+        sortType: SortType.title,
       ));
     }
   }
@@ -137,10 +136,12 @@ class BookBloc extends Bloc<BookEvent, BookState> {
   void _backToList(BackToList event, Emitter<BookState> emit) {
     final current = state;
     if (current is BookDetailView) {
-      emit(BookListView(
-        books: current.books,
-        sortType: current.sortType,
-      ));
+      // Re-emit the correct sorted state based on what was active before
+      if (current.sortType == SortType.author) {
+        emit(SortedByAuthor(books: current.books));
+      } else {
+        emit(SortedByTitle(books: current.books));
+      }
     }
   }
 }

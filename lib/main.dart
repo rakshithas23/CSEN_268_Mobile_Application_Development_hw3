@@ -43,26 +43,43 @@ class HomeScreen extends StatelessWidget {
     return BlocBuilder<BookBloc, BookState>(
       builder: (context, state) {
 
+        // ── Loading (shimmer between sorts) ──────────────────────────────
         if (state is BookLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
         }
 
+        // ── Detail page ──────────────────────────────────────────────────
         if (state is BookDetailView) {
           return Scaffold(
             appBar: AppBar(
+              centerTitle: true,
               title: const Text('Book Detail'),
               leading: IconButton(
                 icon: const Icon(Icons.arrow_back),
                 onPressed: () => context.read<BookBloc>().add(BackToList()),
               ),
+              actions: const [
+                Padding(
+                  padding: EdgeInsets.only(right: 12),
+                  child: Icon(Icons.person_outline),
+                ),
+              ],
             ),
             body: BookDetailWidget(book: state.book),
           );
         }
 
-        if (state is BookListView) {
+        // ── List page: handles both SortedByAuthor and SortedByTitle ─────
+        // Per the slide: if (state is SortedByTitle or state is SortedByAuthor)
+        //                → show the BookList view
+        if (state is SortedByAuthor || state is SortedByTitle) {
+          // Extract books from whichever state it is
+          final books = state is SortedByAuthor
+              ? (state as SortedByAuthor).books
+              : (state as SortedByTitle).books;
+
           return Scaffold(
             appBar: AppBar(
               centerTitle: true,
@@ -83,6 +100,8 @@ class HomeScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Sort chips — use state runtimeType to determine selected
+                  // chip, exactly as described in the slide (Option 2)
                   Row(
                     children: [
                       const Text(
@@ -92,14 +111,18 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(width: 10),
                       _SortChip(
                         label: 'Author',
-                        selected: state.sortType == SortType.author,
-                        onTap: () => context.read<BookBloc>().add(SortByAuthor()),
+                        // Selected when state runtimeType is SortedByAuthor
+                        selected: state is SortedByAuthor,
+                        onTap: () =>
+                            context.read<BookBloc>().add(SortByAuthor()),
                       ),
                       const SizedBox(width: 8),
                       _SortChip(
                         label: 'Title',
-                        selected: state.sortType == SortType.title,
-                        onTap: () => context.read<BookBloc>().add(SortByTitle()),
+                        // Selected when state runtimeType is SortedByTitle
+                        selected: state is SortedByTitle,
+                        onTap: () =>
+                            context.read<BookBloc>().add(SortByTitle()),
                       ),
                     ],
                   ),
@@ -109,16 +132,18 @@ class HomeScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
+                  // Horizontal scrolling book thumbnail list
                   SizedBox(
                     height: 160,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: state.books.length,
+                      itemCount: books.length,
                       separatorBuilder: (_, __) => const SizedBox(width: 10),
                       itemBuilder: (context, index) {
-                        final book = state.books[index];
+                        final book = books[index];
                         return GestureDetector(
-                          onTap: () => context.read<BookBloc>().add(SelectBook(book)),
+                          onTap: () =>
+                              context.read<BookBloc>().add(SelectBook(book)),
                           child: BookThumbnailWidget(book: book),
                         );
                       },
@@ -136,6 +161,7 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
+// ── Sort chip widget ─────────────────────────────────────────────────────────
 
 class _SortChip extends StatelessWidget {
   final String label;
@@ -163,7 +189,7 @@ class _SortChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 13,
             fontWeight: FontWeight.w600,
             color: Colors.black87,
@@ -174,6 +200,7 @@ class _SortChip extends StatelessWidget {
   }
 }
 
+// ── Widget 1: Book thumbnail (image only) ────────────────────────────────────
 
 class BookThumbnailWidget extends StatelessWidget {
   final Book book;
@@ -201,13 +228,17 @@ class BookThumbnailWidget extends StatelessWidget {
             width: 100,
             height: 160,
             color: Colors.grey.shade200,
-            child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            child: const Center(
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
           );
         },
       ),
     );
   }
 }
+
+// ── Widget 2: Book detail (image + title + author + description) ─────────────
 
 class BookDetailWidget extends StatelessWidget {
   final Book book;
@@ -220,7 +251,7 @@ class BookDetailWidget extends StatelessWidget {
       slivers: [
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 40), // 👈 extra bottom space
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -231,18 +262,25 @@ class BookDetailWidget extends StatelessWidget {
                       book.imageUrl,
                       height: 280,
                       fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        height: 280,
+                        color: Colors.grey.shade300,
+                        child: const Icon(Icons.book,
+                            size: 60, color: Colors.grey),
+                      ),
                     ),
                   ),
                 ),
                 const SizedBox(height: 20),
                 Text(
                   book.title,
-                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: const TextStyle(
+                      fontSize: 20, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   book.author,
-                  style: TextStyle(fontSize: 15, color: Colors.grey),
+                  style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
                 ),
                 const SizedBox(height: 16),
                 Text(
